@@ -13,9 +13,10 @@
 using namespace std;
 
 // declarations
-typedef unordered_map<string, string> ul_map;
-ul_map readUsers();
-char* connectRPC(char *, char *, ul_map);
+typedef unordered_map<string, string> useful_map;
+useful_map readUsers();
+char* connectRPC(char *, char *, useful_map);
+useful_map charArrToHashMap(char *);
 
 //#define PORT 8080
 #define PORT 12124
@@ -26,14 +27,9 @@ int main(int argc, char const *argv[])
 	int opt = 1;
 	int addrlen = sizeof(address);
 	char buffer[1024] = { 0 };
-	//const char *hello = "Hello from server";
-	//printf("Hello world\n");
 
 	cout << "Server startup" << endl;
-	ul_map userList = readUsers();
-	//for ( auto itr = userList.begin(); itr != userList.end(); ++itr )
-    //	cout << it->first << ":" << it->second << endl;
-  	//cout << " " << itr->first << ":" << itr->second << endl;
+	useful_map userList = readUsers();
 
 	// Creating socket file descriptor 
 	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
@@ -75,8 +71,6 @@ int main(int argc, char const *argv[])
 	}
 	printf("Accepted Connected\n");
 
-	// We will read the very simple HELLO message and return a Hello message back
-
 	valread = read(new_socket, buffer, 1024);
 	printf("%s\n", buffer);
     
@@ -84,20 +78,30 @@ int main(int argc, char const *argv[])
 	// Parse out char array
 	// Call the correct RPC Function
     // if rpc = connect
-	char * username = new char[6]{'N','a','o','m','i','\0'};
-	char * password = new char[9]{'p','@','s','s','w','o','r','d','\0'};
-	char * output = connectRPC(username, password, userList);
+	// quick and dirty way
+	useful_map rpcCallRcvd = charArrToHashMap(buffer);
+	char * output = new char[100];
+	string rpc = rpcCallRcvd["rpc"];
+	if (rpc.compare("connect") == 0) {
+		//pass connecting info
+		string un = rpcCallRcvd["username"];
+		string pwd = rpcCallRcvd["password"];
+		char * username = new char[un.length()];
+		strcpy(username, un.c_str());
+		char * password = new char[pwd.length()]; 
+		strcpy(password, pwd.c_str());
+		output = connectRPC(username, password, userList);
+	}
 	// if rpc = disconnect
 
 	send(new_socket, output, strlen(output), 0);
-	//send(new_socket, hello, strlen(hello), 0);
-	//printf("Hello message sent\n");
+
 	return 0;
 }
 
 
 //ADD FUNCTIONS
-char* connectRPC(char *userName, char *password, ul_map ul) {
+char* connectRPC(char *userName, char *password, useful_map ul) {
     // prepare return
 	char* output = new char[30];
 	string lookupUn = string(userName);
@@ -124,10 +128,12 @@ char* connectRPC(char *userName, char *password, ul_map ul) {
 // including a function to read/write user list to disk
 // simple but users will persist between server launches
 // load at server start
-ul_map readUsers() {
+useful_map readUsers() {
 	//commented out csv portion because it was reading the \n 
+	// figure out a nicer data storage option
+	// sqlite??
 	/*//initialize
-	ul_map users;
+	useful_map users;
 	//open the csv file with users info
 	ifstream openFile("users.csv");
 	//loop over and read to a hashmap
@@ -142,7 +148,32 @@ ul_map readUsers() {
         }
 		openFile.close();
     }*/
-	ul_map users ({{"Naomi","p@ssword"},{"Ruifeng","p@ssword"},{"Aishwarya","p@ssword"}});
+	useful_map users ({{"Naomi","p@ssword"},{"Ruifeng","p@ssword"},{"Aishwarya","p@ssword"}});
 	return users;
 }
 
+// just adding for easy parsing
+// but not practical since it casts back and forth with strings
+useful_map charArrToHashMap(char * charArr) {
+	const char delimiter[2] = ";";
+	const char delimiter2[2] = "=";
+	char* leftStr;
+	char* rightStr;
+	useful_map RPCCall;
+
+	leftStr = strtok_r(charArr, delimiter2, &charArr);
+	rightStr = strtok_r(charArr, delimiter, &charArr);
+	RPCCall[string(leftStr)] = string(rightStr);
+	int i = 0;
+	while(leftStr != NULL && rightStr != NULL) {
+		if (i % 2 == 0) {
+			leftStr = strtok_r(charArr, delimiter2, &charArr);
+		} else {
+			rightStr = strtok_r(charArr, delimiter, &charArr);
+			RPCCall[string(leftStr)] = string(rightStr);
+		}
+		i++;
+	}
+
+	return RPCCall;
+}
