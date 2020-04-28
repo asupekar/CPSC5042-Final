@@ -50,10 +50,15 @@ using namespace std;
 
 	int disconnectRPC(int & sock)
 	{
-		// input format="rpc=disconnect"
-		// output format="status=<error status>; error=<error or blank>;
-		return 0;
-	}
+		int result = close(sock);
+		cout << "Status = "<< result<<"; ";
+		if (result < 0) {
+		    cout<<"Error = Closing failed!"<<endl;
+		} else {
+		    cout<<"Error = Closing successful"<<endl;
+		}
+		return result;
+        }
 
 	int helloRPC(int & sock)
 	{
@@ -111,6 +116,14 @@ using namespace std;
 		//helloRPC(sock);
 
 		connectRPC(sock);
+		
+		cout<<"Waiting for 10 seconds....."<<endl;
+		
+		//Sleep for 10 seconds
+       	        usleep(10000000);
+		
+		//Disconnect the client
+                disconnectRPC(sock);
 
 		return 0;
 	}
