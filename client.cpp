@@ -50,9 +50,14 @@ using namespace std;
 
 	int disconnectRPC(int & sock)
 	{
-		// input format="rpc=disconnect"
-		// output format="status=<error status>; error=<error or blank>;
-		return 0;
+		int result = close(sock);
+		cout << "Status = "<< result<<"; ";
+		if (result < 0) {
+		    cout<<"Error = Closing failed!"<<endl;
+		} else {
+		    cout<<"Error = Closing successful"<<endl;
+		}
+		return result;
 	}
 
 	int helloRPC(int & sock)
