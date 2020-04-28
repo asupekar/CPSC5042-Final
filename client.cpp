@@ -116,6 +116,10 @@ using namespace std;
 		//helloRPC(sock);
 
 		connectRPC(sock);
+		
+		usleep(10000000);
+		
+		 disconnectRPC(sock);
 
 		return 0;
 	}
